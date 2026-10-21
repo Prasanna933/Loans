@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Loan Tracker</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<meta name="theme-color" content="#1f4fd8">
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--tx:#1b1f24;--mu:#6b7280;--bd:#e3e6ea;--ac:#1f4fd8;--acx:#fff;--ok:#15803d;--okb:#dcfce7;--bad:#b91c1c;--badb:#fee2e2;--act:#1d4ed8;--actb:#dbeafe;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12151a;--card:#1c2027;--tx:#eceff3;--mu:#9aa3af;--bd:#2c323b;--ac:#6d93ff;--acx:#0b1020;--ok:#4ade80;--okb:#12301d;--bad:#f87171;--badb:#3a1818;--act:#93b4ff;--actb:#1a2744;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12151a;--card:#1c2027;--tx:#eceff3;--mu:#9aa3af;--bd:#2c323b;--ac:#6d93ff;--acx:#0b1020;--ok:#4ade80;--okb:#12301d;--bad:#f87171;--badb:#3a1818;--act:#93b4ff;--actb:#1a2744;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 Arial,Helvetica,sans-serif}
+.w{max-width:760px;margin:0 auto;padding:14px}
+h1{font-size:20px;margin:6px 0 12px}
+.g{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.s{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px}
+.s b{display:block;font-size:18px;margin-top:2px}.s span{color:var(--mu);font-size:12px}
+.bar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+input,select,button{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:9px 10px}
+input,select{width:100%}.bar input{flex:2 1 160px}.bar select{flex:1 1 100px;width:auto}
+button{cursor:pointer}button.p{background:var(--ac);color:var(--acx);border-color:var(--ac);font-weight:700}
+button.d{color:var(--bad)}
+.l{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin-bottom:8px;cursor:pointer;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.l small{color:var(--mu);display:block}.r{text-align:right;white-space:nowrap}
+.t{font-size:11px;font-weight:700;border-radius:20px;padding:2px 8px;display:inline-block;margin-top:3px}
+.Paid{background:var(--okb);color:var(--ok)}.Overdue{background:var(--badb);color:var(--bad)}.Active{background:var(--actb);color:var(--act)}
+.m{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-end;justify-content:center;z-index:5}
+.m.o{display:flex}
+.sh{background:var(--bg);width:100%;max-width:560px;max-height:92%;overflow:auto;border-radius:14px 14px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.sh label{display:block;font-size:12px;color:var(--mu);margin:10px 0 3px}
+.row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.row>*{flex:1}
+.k{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd)}
+.e{color:var(--mu);text-align:center;padding:24px 8px}
+textarea{width:100%;height:80px;font:12px monospace;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:8px}
+details{margin-top:16px}summary{cursor:pointer;color:var(--mu)}
+.n{color:var(--mu);font-size:12px;margin-top:6px}
+td,th{border-bottom:1px solid var(--bd);padding:5px 4px;text-align:right}td:first-child{text-align:left}
+@media print{body{background:#fff}.w{display:none}.m.o{position:static;display:block;background:none}.m .sh{max-width:none;max-height:none;overflow:visible;background:#fff;padding:0;border-radius:0}.np{display:none!important}.sh,.sh *{color:#000!important}.t{background:none!important;border:1px solid #000}td,th,.k{border-color:#999}}
+</style>
+</head>
+<body>
+<div class="w">
+<h1>Loan Tracker</h1>
+<div class="g" id="sum"></div>
+<div class="bar">
+<input id="q" placeholder="Search name or phone" oninput="draw()">
+<select id="f" onchange="draw()"><option>All</option><option>Active</option><option>Overdue</option><option>Paid</option></select>
+<button class="p" onclick="openNew()">+ New loan</button>
+<button onclick="printList()">Print list</button>
+</div>
+<div id="list"></div>
+<details><summary>Settings and backup</summary>
+<label class="n">Default interest % for new loans</label><input id="rate" type="number" step="0.1" onchange="setSet()">
+<label class="n">Default days to repay for new loans</label><input id="days" type="number" onchange="setSet()">
+<p class="n">Interest is kept upfront: you give the loan amount minus the rate % of it, and the customer repays the full loan amount. Each loan keeps its own rate and days, so changing the defaults does not affect existing loans. Data is saved only in this browser, so copy a backup regularly.</p>
+<textarea id="bk" placeholder="Backup text appears here, or paste a backup to restore"></textarea>
+<div class="row"><button onclick="backup()">Create backup</button><button onclick="restore()">Restore from text</button></div>
+<div class="n" id="bkm"></div>
+</details>
+</div>
+<div class="m" id="m" onclick="if(event.target===this)closeM()"><div class="sh" id="sh"></div></div>
+<script>
+var K='loantracker.v1',S={loans:[],set:{rate:12,days:100}},warn='';
+try{var r=JSON.parse(localStorage.getItem(K));if(r&&r.loans)S=r}catch(e){}
+function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){warn='Could not save in this browser.'}}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function iso(d){var m=d.getMonth()+1,x=d.getDate();return d.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(x<10?'0':'')+x}
+function pd(s){var a=s.split('-');return new Date(+a[0],+a[1]-1,+a[2])}
+function fm(n){return Math.round(n).toLocaleString()}
+function fd(d){return d.toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'})}
+function calc(l){
+ var today=new Date();today.setHours(0,0,0,0);
+ var R=l.rate!=null?l.rate:S.set.rate,D=l.days!=null?l.days:S.set.days,i=l.amount*R/100,t=l.amount,p=0;
+ l.pay.forEach(function(x){p+=x.amt});
+ var due=pd(l.date);due.setDate(due.getDate()+D);
+ var b=t-p,st=b<=0?'Paid':(today>due?'Overdue':'Active');
+ return{R:R,D:D,i:i,cash:t-i,t:t,p:p,b:b,due:due,st:st,late:st==='Overdue'?Math.round((today-due)/864e5):0};
+}
+function draw(){
+ var q=document.getElementById('q').value.toLowerCase(),f=document.getElementById('f').value;
+ var lent=0,paid=0,owed=0,od=0,odAmt=0,rows=[];
+ S.loans.forEach(function(l){
+  var c=calc(l);lent+=c.cash;paid+=c.p;if(c.b>0)owed+=c.b;
+  if(c.st==='Overdue'){od++;odAmt+=c.b}
+  if((f==='All'||c.st===f)&&(l.name+' '+l.phone).toLowerCase().indexOf(q)>-1)rows.push([l,c]);
+ });
+ rows.sort(function(a,b){return (a[1].st==='Overdue'?0:1)-(b[1].st==='Overdue'?0:1)||a[1].due-b[1].due});
+ document.getElementById('sum').innerHTML=
+  '<div class="s"><span>Cash given out</span><b>'+fm(lent)+'</b></div>'+
+  '<div class="s"><span>Balance owed to you</span><b>'+fm(owed)+'</b></div>'+
+  '<div class="s"><span>Repaid so far</span><b>'+fm(paid)+'</b></div>'+
+  '<div class="s"><span>Overdue ('+od+' loans)</span><b style="color:var(--bad)">'+fm(odAmt)+'</b></div>';
+ document.getElementById('list').innerHTML=rows.length?rows.map(function(x){
+  var l=x[0],c=x[1];
+  return '<div class="l" onclick="openLoan(\''+l.id+'\')"><div><b>'+esc(l.name)+'</b><small>'+esc(l.phone)+' · due '+fd(c.due)+' · '+c.R+'%</small></div>'+
+  '<div class="r"><b>'+fm(c.b)+'</b><br><span class="t '+c.st+'">'+c.st+(c.late?' '+c.late+'d':'')+'</span></div></div>';
+ }).join(''):'<div class="e">'+(S.loans.length?'No loans match.':'No loans yet. Tap “+ New loan” to add your first customer.')+'</div>';
+ document.getElementById('rate').value=S.set.rate;document.getElementById('days').value=S.set.days;
+ if(warn)document.getElementById('bkm').textContent=warn;
+}
+function openM(h){document.getElementById('sh').innerHTML=h;document.getElementById('m').classList.add('o')}
+function closeM(){document.getElementById('m').classList.remove('o')}
+function openNew(){
+ openM('<h2>New loan</h2><label>Customer name</label><input id="nn"><label>Phone</label><input id="np" type="tel"><label>Loan amount (customer repays this)</label><input id="na" type="number" inputmode="decimal" oninput="prev()"><div class="row" style="margin-top:0"><div><label>Interest %</label><input id="nr" type="number" step="0.1" inputmode="decimal" value="'+S.set.rate+'" oninput="prev()"></div><div><label>Days to repay</label><input id="nk" type="number" inputmode="numeric" value="'+S.set.days+'"></div></div><div class="n" id="pv"></div><label>Date given</label><input id="nd" type="date" value="'+iso(new Date())+'"><div class="row"><button onclick="closeM()">Cancel</button><button class="p" onclick="addLoan()">Save loan</button></div>');
+}
+function prev(){var a=parseFloat(document.getElementById('na').value),r=parseFloat(document.getElementById('nr').value)||0;document.getElementById('pv').textContent=a>0?'You give '+fm(a-a*r/100)+' cash. Interest kept: '+fm(a*r/100):''}
+function editTerms(id){var l=find(id),r=parseFloat(document.getElementById('er').value),d=parseInt(document.getElementById('ed').value,10);if(!(r>=0)||!(d>0)){msg('Enter a valid rate and days.');return}l.rate=r;l.days=d;save();draw();openLoan(id);msg('Terms updated')}
+function addLoan(){
+ var n=document.getElementById('nn').value.trim(),a=parseFloat(document.getElementById('na').value),d=document.getElementById('nd').value;
+ if(!n||!(a>0)||!d){msg('Please enter name, amount and date.');return}
+ var rt=parseFloat(document.getElementById('nr').value),dy=parseInt(document.getElementById('nk').value,10);if(!(rt>=0)||!(dy>0)){msg('Enter interest % and days.');return}
+ S.loans.push({id:'L'+Date.now(),name:n,phone:document.getElementById('np').value.trim(),amount:a,date:d,rate:rt,days:dy,pay:[]});
+ save();closeM();draw();
+}
+function openLoan(id){
+ var l=S.loans.filter(function(x){return x.id===id})[0];if(!l)return;var c=calc(l);
+ var pays=l.pay.length?l.pay.map(function(p,i){return '<div class="k"><span>'+fd(pd(p.date))+'</span><span>'+fm(p.amt)+' <button class="d" onclick="delPay(\''+id+'\','+i+')">✕</button></span></div>'}).join(''):'<div class="n">No payments yet.</div>';
+ openM('<h2>'+esc(l.name)+'</h2><div class="n">'+esc(l.phone)+'</div>'+
+ '<div class="k"><span>Cash given ('+fd(pd(l.date))+')</span><b>'+fm(c.cash)+'</b></div>'+
+ '<div class="k"><span>Interest kept upfront ('+c.R+'% for '+c.D+' days)</span><b>'+fm(c.i)+'</b></div>'+
+ '<div class="k"><span>Customer repays by '+fd(c.due)+'</span><b>'+fm(c.t)+'</b></div>'+
+ '<div class="k"><span>Repaid</span><b>'+fm(c.p)+'</b></div>'+
+ '<div class="k"><span>Balance</span><b>'+fm(Math.max(c.b,0))+' <span class="t '+c.st+'">'+c.st+'</span></b></div>'+
+ '<div class="row"><div><label>Interest %</label><input id="er" type="number" step="0.1" value="'+c.R+'"></div><div><label>Days to repay</label><input id="ed" type="number" value="'+c.D+'"></div><div style="flex:0 0 auto;align-self:flex-end"><button onclick="editTerms(\''+id+'\')">Update</button></div></div><h3>Payments</h3>'+pays+
+ '<label>Add payment</label><div class="row" style="margin-top:0"><input id="pa" type="number" inputmode="decimal" placeholder="Amount"><input id="pdt" type="date" value="'+iso(new Date())+'"></div>'+
+ '<div class="row"><button class="d" onclick="delLoan(\''+id+'\')">Delete loan</button><button onclick="closeM()">Close</button><button onclick="stmt(\''+id+'\')">Print</button><button class="p" onclick="addPay(\''+id+'\')">Add payment</button></div>');
+}
+function find(id){return S.loans.filter(function(x){return x.id===id})[0]}
+function doPrint(){try{window.print()}catch(e){msg('Printing is not available here. Take a screenshot instead.')}}
+function stmt(id){var l=find(id),c=calc(l);
+ var pays=l.pay.length?l.pay.map(function(p){return '<div class="k"><span>'+fd(pd(p.date))+'</span><span>'+fm(p.amt)+'</span></div>'}).join(''):'<div class="n">No payments yet.</div>';
+ openM('<h2>Loan statement</h2><div class="n">Printed on '+fd(new Date())+'</div><h3>'+esc(l.name)+'</h3><div class="n">'+esc(l.phone)+'</div>'+
+ '<div class="k"><span>Loan date</span><b>'+fd(pd(l.date))+'</b></div>'+
+ '<div class="k"><span>Cash given</span><b>'+fm(c.cash)+'</b></div>'+
+ '<div class="k"><span>Interest kept upfront ('+c.R+'% for '+c.D+' days)</span><b>'+fm(c.i)+'</b></div>'+
+ '<div class="k"><span>Amount to repay</span><b>'+fm(c.t)+'</b></div>'+
+ '<div class="k"><span>Due date</span><b>'+fd(c.due)+'</b></div>'+
+ '<div class="k"><span>Total paid</span><b>'+fm(c.p)+'</b></div>'+
+ '<div class="k"><span>Balance</span><b>'+fm(Math.max(c.b,0))+' ('+c.st+')</b></div>'+
+ '<h3>Payments</h3>'+pays+
+ '<div class="n np">If Print does nothing, take a screenshot of this page.</div><div class="row np"><button onclick="openLoan(\''+id+'\')">Back</button><button class="p" onclick="doPrint()">Print</button></div>');
+}
+function printList(){
+ var q=document.getElementById('q').value.toLowerCase(),f=document.getElementById('f').value,tt=0,tp=0,tb=0;
+ var rows=S.loans.filter(function(l){var c=calc(l);return (f==='All'||c.st===f)&&(l.name+' '+l.phone).toLowerCase().indexOf(q)>-1}).sort(function(a,b){return calc(a).due-calc(b).due});
+ var tr=rows.map(function(l){var c=calc(l),b=Math.max(c.b,0);tt+=c.t;tp+=c.p;tb+=b;return '<tr><td>'+esc(l.name)+'<br><small>'+esc(l.phone)+'</small></td><td>'+fd(c.due)+'</td><td>'+c.R+'%</td><td>'+fm(c.t)+'</td><td>'+fm(c.p)+'</td><td>'+fm(b)+'</td><td>'+c.st+'</td></tr>'}).join('');
+ openM('<h2>Customer list</h2><div class="n">Printed on '+fd(new Date())+' · '+rows.length+' loans</div><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px"><tr><th style="text-align:left">Customer</th><th>Due</th><th>Rate</th><th>Repay</th><th>Paid</th><th>Balance</th><th>Status</th></tr>'+tr+'<tr><td><b>Total</b></td><td></td><td></td><td><b>'+fm(tt)+'</b></td><td><b>'+fm(tp)+'</b></td><td><b>'+fm(tb)+'</b></td><td></td></tr></table></div>'+
+ '<div class="n np">If Print does nothing, take a screenshot of this page.</div><div class="row np"><button onclick="closeM()">Close</button><button class="p" onclick="doPrint()">Print</button></div>');
+}
+function addPay(id){
+ var a=parseFloat(document.getElementById('pa').value),d=document.getElementById('pdt').value;
+ if(!(a>0)||!d){msg('Enter amount and date.');return}
+ find(id).pay.push({date:d,amt:a});save();draw();openLoan(id);
+}
+function delPay(id,i){find(id).pay.splice(i,1);save();draw();openLoan(id);msg('Payment removed')}
+function delLoan(id){var l=find(id);openM('<h2>Delete '+esc(l.name)+'?</h2><p>This removes the loan and all its payments. It cannot be undone.</p><div class="row"><button onclick="openLoan(\''+id+'\')">Cancel</button><button class="d" onclick="doDel(\''+id+'\')">Yes, delete</button></div>')}
+function doDel(id){S.loans=S.loans.filter(function(x){return x.id!==id});save();closeM();draw();msg('Loan deleted')}
+function msg(t){var d=document.getElementById('toast');if(!d){d=document.createElement('div');d.id='toast';d.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:20px;z-index:9;font-size:14px';document.body.appendChild(d)}d.textContent=t;d.style.display='block';clearTimeout(d.t);d.t=setTimeout(function(){d.style.display='none'},2500)}
+function setSet(){
+ var r=parseFloat(document.getElementById('rate').value),d=parseInt(document.getElementById('days').value,10);
+ if(r>=0)S.set.rate=r;if(d>0)S.set.days=d;save();draw();
+}
+function backup(){
+ var t=document.getElementById('bk');t.value=JSON.stringify(S);t.select();
+ try{navigator.clipboard.writeText(t.value);document.getElementById('bkm').textContent='Backup created. Copy it and save it somewhere safe.'}catch(e){document.getElementById('bkm').textContent='Backup created. Copy the text and save it somewhere safe.'}
+}
+function restore(){
+ try{var r=JSON.parse(document.getElementById('bk').value);if(!r.loans)throw 0;
+  S=r;save();draw();document.getElementById('bkm').textContent='Restored.'}
+ catch(e){msg('That does not look like a valid backup.')}
+}
+S.loans.forEach(function(l){if(l.rate==null)l.rate=S.set.rate;if(l.days==null)l.days=S.set.days});save();draw();
+if('serviceWorker' in navigator){try{navigator.serviceWorker.register('sw.js')}catch(e){}}
+</script>
+</body>
+</html>
